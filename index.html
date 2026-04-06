@@ -93,6 +93,19 @@ body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:#1a
 .gps-loading { display:flex; flex-direction:column; align-items:center; gap:10px; padding:30px; }
 .gps-spinner { width:40px; height:40px; border:4px solid rgba(255,255,255,0.1); border-top-color:#e94560; border-radius:50%; animation:spin 1s linear infinite; }
 @keyframes spin { to{transform:rotate(360deg)} }
+.ot-section { margin:20px 0; }
+.ot-section h3 { color:#fd79a8; margin-bottom:12px; }
+.ot-card { display:flex; align-items:center; justify-content:space-between; padding:12px; margin-bottom:8px; background:rgba(255,255,255,0.06); border-radius:10px; flex-wrap:wrap; gap:8px; }
+.ot-card-info { flex:1; min-width:150px; }
+.ot-card-name { font-weight:700; font-size:14px; }
+.ot-card-detail { font-size:12px; color:#999; margin-top:2px; }
+.ot-card-buttons { display:flex; gap:6px; }
+.ot-btn { padding:6px 14px; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; }
+.ot-btn-ok { background:#00b894; color:#fff; }
+.ot-btn-no { background:#e94560; color:#fff; }
+.ot-badge-approved { background:rgba(0,184,148,0.2); color:#00b894; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:700; }
+.ot-badge-rejected { background:rgba(233,69,96,0.2); color:#e94560; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:700; }
+.ot-badge-pending { background:rgba(253,203,110,0.2); color:#fdcb6e; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:700; }
 </style>
 </head>
 <body>
@@ -130,7 +143,7 @@ body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:#1a
     <div class="dash-date" id="dashDate"></div>
     <button class="dash-logout" onclick="logout()">Cikis</button>
   </div>
-  <div class="dash-status" id="dashStatus">
+  <div class="dash-status">
     <div class="dash-status-icon" id="statusIcon">⏰</div>
     <div class="dash-status-text" id="statusText">Henuz giris yapilmadi</div>
     <div class="dash-status-time" id="statusTime"></div>
@@ -165,6 +178,7 @@ body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:#1a
   </div>
   <div class="summary-cards" id="summaryCards"></div>
   <div class="top3-section" id="top3Section"></div>
+  <div class="ot-section" id="otSection"></div>
   <div style="overflow-x:auto;">
     <table class="report-table" id="reportTable"></table>
   </div>
@@ -228,36 +242,23 @@ function isHalfSaturday(year, month, day) {
   var diff = Math.round((d - HALF_SAT_REF) / (7 * 24 * 60 * 60 * 1000));
   return diff % 2 === 0;
 }
-
 function getWorkEnd(year, month, day) {
-  var d = new Date(year, month, day);
-  if (d.getDay() === 6 && isHalfSaturday(year, month, day)) return WORK_END_HALF;
+  if (new Date(year, month, day).getDay() === 6 && isHalfSaturday(year, month, day)) return WORK_END_HALF;
   return WORK_END_FULL;
 }
-
 function getOvertimeStart(year, month, day) {
-  var d = new Date(year, month, day);
-  if (d.getDay() === 6 && isHalfSaturday(year, month, day)) return OVERTIME_START_HALF;
+  if (new Date(year, month, day).getDay() === 6 && isHalfSaturday(year, month, day)) return OVERTIME_START_HALF;
   return OVERTIME_START_FULL;
 }
-
-function isWorkDay(year, month, day) {
-  var dow = new Date(year, month, day).getDay();
-  return dow !== 0;
-}
-
+function isWorkDay(year, month, day) { return new Date(year, month, day).getDay() !== 0; }
 function timeToMin(t) { var p = t.split(':'); return parseInt(p[0]) * 60 + parseInt(p[1]); }
-
 function calcOvertime(checkout, year, month, day) {
-  var otStart = getOvertimeStart(year, month, day);
+  var otMin = timeToMin(getOvertimeStart(year, month, day));
   var checkMin = timeToMin(checkout);
-  var otMin = timeToMin(otStart);
-  if (checkMin <= otMin) return 0;
-  return checkMin - otMin;
+  return checkMin > otMin ? checkMin - otMin : 0;
 }
-
 function formatMin(m) {
-  if (m <= 0) return '-';
+  if (!m || m <= 0) return '-';
   var h = Math.floor(m / 60);
   var min = m % 60;
   if (h > 0) return h + 's ' + min + 'dk';
@@ -272,14 +273,11 @@ function getRecord(userId, date) { var data = getData(); return data[userId]?.[d
 function setRecord(userId, date, record) { var data = getData(); if (!data[userId]) data[userId] = {}; data[userId][date] = record; saveData(data); }
 
 function getDistance(lat1, lon1, lat2, lon2) {
-  var R = 6371e3;
-  var toRad = function(x) { return x * Math.PI / 180; };
-  var dLat = toRad(lat2 - lat1);
-  var dLon = toRad(lon2 - lon1);
+  var R = 6371e3, toRad = function(x) { return x * Math.PI / 180; };
+  var dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
   var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)*Math.sin(dLon/2);
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-
 function checkGPS() {
   return new Promise(function(resolve, reject) {
     if (!navigator.geolocation) { reject('Konum servisi desteklenmiyor.'); return; }
@@ -288,8 +286,8 @@ function checkGPS() {
       function(pos) {
         document.getElementById('gpsLoading').classList.add('hidden');
         var dist = getDistance(pos.coords.latitude, pos.coords.longitude, FACTORY_LAT, FACTORY_LNG);
-        if (dist <= MAX_DISTANCE_M) { resolve(Math.round(dist)); }
-        else { reject('Fabrikaya uzakliginiz ' + Math.round(dist) + ' metre. En fazla ' + MAX_DISTANCE_M + ' metre uzaklikta olmalisiniz.'); }
+        if (dist <= MAX_DISTANCE_M) resolve(Math.round(dist));
+        else reject('Fabrikaya uzakliginiz ' + Math.round(dist) + ' metre. En fazla ' + MAX_DISTANCE_M + ' metre uzaklikta olmalisiniz.');
       },
       function(err) {
         document.getElementById('gpsLoading').classList.add('hidden');
@@ -301,7 +299,6 @@ function checkGPS() {
     );
   });
 }
-
 function showToast(msg, type) {
   if (!type) type = 'success';
   var existing = document.querySelector('.toast');
@@ -314,14 +311,12 @@ function showToast(msg, type) {
 }
 
 function renderLogin() {
-  var list = document.getElementById('staffList');
-  var html = '';
+  var list = document.getElementById('staffList'), html = '';
   for (var i = 0; i < STAFF.length; i++) {
     html += '<button class="staff-btn" onclick="selectUser(\'' + STAFF[i].id + '\')"><div class="staff-avatar">' + STAFF[i].name.charAt(0) + '</div><div><div class="staff-name">' + STAFF[i].name + '</div><div class="staff-id">' + STAFF[i].id + '</div></div></button>';
   }
   list.innerHTML = html;
 }
-
 function selectUser(userId) {
   pendingUser = STAFF.find(function(s) { return s.id === userId; });
   if (!pendingUser) return;
@@ -332,12 +327,9 @@ function selectUser(userId) {
   document.getElementById('pinPage').classList.remove('hidden');
   document.getElementById('pinInput').focus();
 }
-
 function verifyPin() {
-  var pin = document.getElementById('pinInput').value;
-  if (pin === pendingUser.pin) {
-    currentUser = pendingUser;
-    pendingUser = null;
+  if (document.getElementById('pinInput').value === pendingUser.pin) {
+    currentUser = pendingUser; pendingUser = null;
     localStorage.setItem('ibiza_current_user', currentUser.id);
     document.getElementById('pinPage').classList.add('hidden');
     showDashboard();
@@ -347,13 +339,7 @@ function verifyPin() {
     document.getElementById('pinInput').focus();
   }
 }
-
-function cancelPin() {
-  pendingUser = null;
-  document.getElementById('pinPage').classList.add('hidden');
-  document.getElementById('loginPage').classList.remove('hidden');
-}
-
+function cancelPin() { pendingUser = null; document.getElementById('pinPage').classList.add('hidden'); document.getElementById('loginPage').classList.remove('hidden'); }
 function showAdminLogin() {
   document.getElementById('loginPage').classList.add('hidden');
   document.getElementById('adminLoginPage').classList.remove('hidden');
@@ -361,36 +347,20 @@ function showAdminLogin() {
   document.getElementById('adminPassError').classList.add('hidden');
   document.getElementById('adminPassInput').focus();
 }
-
 function verifyAdminPass() {
   if (document.getElementById('adminPassInput').value === ADMIN_PASS) {
-    document.getElementById('adminLoginPage').classList.add('hidden');
-    showAdmin();
+    document.getElementById('adminLoginPage').classList.add('hidden'); showAdmin();
   } else {
     document.getElementById('adminPassError').classList.remove('hidden');
     document.getElementById('adminPassInput').value = '';
     document.getElementById('adminPassInput').focus();
   }
 }
-
-function cancelAdminLogin() {
-  document.getElementById('adminLoginPage').classList.add('hidden');
-  document.getElementById('loginPage').classList.remove('hidden');
-}
-
-function logout() {
-  currentUser = null;
-  localStorage.removeItem('ibiza_current_user');
-  document.getElementById('dashboardPage').classList.add('hidden');
-  document.getElementById('loginPage').classList.remove('hidden');
-}
-
+function cancelAdminLogin() { document.getElementById('adminLoginPage').classList.add('hidden'); document.getElementById('loginPage').classList.remove('hidden'); }
+function logout() { currentUser = null; localStorage.removeItem('ibiza_current_user'); document.getElementById('dashboardPage').classList.add('hidden'); document.getElementById('loginPage').classList.remove('hidden'); }
 function autoLogin() {
   var saved = localStorage.getItem('ibiza_current_user');
-  if (saved) {
-    currentUser = STAFF.find(function(s) { return s.id === saved; });
-    if (currentUser) { showDashboard(); return; }
-  }
+  if (saved) { currentUser = STAFF.find(function(s) { return s.id === saved; }); if (currentUser) { showDashboard(); return; } }
   document.getElementById('loginPage').classList.remove('hidden');
 }
 
@@ -401,9 +371,8 @@ function showDashboard() {
   document.getElementById('dashName').textContent = currentUser.name;
   var now = new Date();
   document.getElementById('dashDate').textContent = now.getDate() + ' ' + MONTHS_TR[now.getMonth()] + ' ' + now.getFullYear() + ', ' + DAYS_TR[now.getDay()];
-  var wEnd = getWorkEnd(now.getFullYear(), now.getMonth(), now.getDate());
-  var dayType = (now.getDay() === 6 && isHalfSaturday(now.getFullYear(), now.getMonth(), now.getDate())) ? 'Yarim gun (12:00)' : 'Tam gun (18:00)';
-  document.getElementById('workInfo').textContent = 'Bugun: ' + dayType + ' | Cikis: ' + wEnd;
+  var half = now.getDay() === 6 && isHalfSaturday(now.getFullYear(), now.getMonth(), now.getDate());
+  document.getElementById('workInfo').textContent = 'Bugun: ' + (half ? 'Yarim gun (12:00)' : 'Tam gun (18:00)') + ' | Cikis: ' + (half ? '12:00' : '18:00');
   updateDashStatus();
   checkMonthEndCongrats();
 }
@@ -414,21 +383,14 @@ function updateDashStatus() {
   var statusText = document.getElementById('statusText');
   var statusTime = document.getElementById('statusTime');
   var actionDiv = document.getElementById('actionButtons');
-
   if (!record) {
-    statusIcon.textContent = '⏰';
-    statusText.textContent = 'Henuz giris yapilmadi';
-    statusTime.textContent = '';
+    statusIcon.textContent = '⏰'; statusText.textContent = 'Henuz giris yapilmadi'; statusTime.textContent = '';
     actionDiv.innerHTML = '<button class="btn-giris btn-checkin" onclick="doCheckin()">👋 GIRIS YAP</button><button class="btn-mazeret" onclick="openMazeret()">📋 Mazeret Bildir (Bugun Gelemiyorum)</button>';
   } else if (record.type === 'mazeret') {
-    statusIcon.textContent = '📋';
-    statusText.textContent = 'Mazeret: ' + record.reason;
-    statusTime.textContent = '';
+    statusIcon.textContent = '📋'; statusText.textContent = 'Mazeret: ' + record.reason; statusTime.textContent = '';
     actionDiv.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">Bugun icin mazeret bildirildi.</div>';
   } else if (record.checkin && !record.checkout) {
-    statusIcon.textContent = '✅';
-    statusText.textContent = 'Giris yapildi';
-    statusTime.textContent = record.checkin;
+    statusIcon.textContent = '✅'; statusText.textContent = 'Giris yapildi'; statusTime.textContent = record.checkin;
     actionDiv.innerHTML = '<button class="btn-giris btn-checkout" onclick="doCheckout()">👋 CIKIS YAP</button>';
   } else if (record.checkin && record.checkout) {
     statusIcon.textContent = '🏠';
@@ -442,7 +404,6 @@ async function doCheckin() {
   try {
     var dist = await checkGPS();
     var time = nowTime();
-    var now = new Date();
     var record = { checkin: time, checkout: null, distance: dist };
     if (time > WORK_START) record.late = true;
     setRecord(currentUser.id, todayKey(), record);
@@ -462,11 +423,11 @@ async function doCheckout() {
     var wEnd = getWorkEnd(now.getFullYear(), now.getMonth(), now.getDate());
     if (time < wEnd) record.earlyLeave = true;
     var ot = calcOvertime(time, now.getFullYear(), now.getMonth(), now.getDate());
-    if (ot > 0) record.overtime = ot;
+    if (ot > 0) { record.overtime = ot; record.overtimeStatus = 'pending'; }
     setRecord(currentUser.id, todayKey(), record);
     updateDashStatus();
     var msg = 'Cikis kaydedildi: ' + time + ' ✓';
-    if (ot > 0) msg += ' (Mesai: ' + formatMin(ot) + ')';
+    if (ot > 0) msg += ' (Mesai: ' + formatMin(ot) + ' - Onay bekliyor)';
     showToast(msg);
   } catch (err) { showToast(err, 'error'); }
 }
@@ -476,23 +437,30 @@ function closeMazeret() { document.getElementById('mazeretModal').classList.add(
 function submitMazeret(reason) {
   var note = document.getElementById('mazeretNote').value.trim();
   setRecord(currentUser.id, todayKey(), { type: 'mazeret', reason: reason, note: note, time: nowTime() });
-  closeMazeret();
-  updateDashStatus();
+  closeMazeret(); updateDashStatus();
   showToast('Mazeret bildirildi: ' + reason);
+}
+
+function approveOvertime(userId, date) {
+  var data = getData();
+  if (data[userId] && data[userId][date]) { data[userId][date].overtimeStatus = 'approved'; saveData(data); renderAdmin(); showToast('Mesai onaylandi ✓'); }
+}
+function rejectOvertime(userId, date) {
+  var data = getData();
+  if (data[userId] && data[userId][date]) { data[userId][date].overtimeStatus = 'rejected'; data[userId][date].overtime = 0; saveData(data); renderAdmin(); showToast('Mesai reddedildi ✗', 'error'); }
 }
 
 function showAdmin() {
   document.getElementById('loginPage').classList.add('hidden');
   document.getElementById('dashboardPage').classList.add('hidden');
   document.getElementById('adminPage').classList.remove('hidden');
-  adminMonth = new Date().getMonth();
-  adminYear = new Date().getFullYear();
+  adminMonth = new Date().getMonth(); adminYear = new Date().getFullYear();
   renderAdmin();
 }
 function hideAdmin() {
   document.getElementById('adminPage').classList.add('hidden');
-  if (currentUser) { document.getElementById('dashboardPage').classList.remove('hidden'); }
-  else { document.getElementById('loginPage').classList.remove('hidden'); }
+  if (currentUser) document.getElementById('dashboardPage').classList.remove('hidden');
+  else document.getElementById('loginPage').classList.remove('hidden');
 }
 function changeMonth(dir) {
   adminMonth += dir;
@@ -505,21 +473,30 @@ function renderAdmin() {
   document.getElementById('monthLabel').textContent = MONTHS_TR[adminMonth] + ' ' + adminYear;
   var data = getData();
   var daysInMonth = new Date(adminYear, adminMonth + 1, 0).getDate();
-  var totalWorked = 0, totalLate = 0, totalAbsent = 0, totalExcuse = 0, totalOvertime = 0;
+  var totalWorked = 0, totalLate = 0, totalAbsent = 0, totalExcuse = 0, totalOtApproved = 0;
   var scores = [];
+  var pendingOts = [];
 
   STAFF.forEach(function(s) {
-    var worked = 0, late = 0, absent = 0, excuse = 0, overtime = 0;
+    var worked = 0, late = 0, absent = 0, excuse = 0, otApproved = 0;
     for (var d = 1; d <= daysInMonth; d++) {
       var date = adminYear + '-' + String(adminMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
       if (!isWorkDay(adminYear, adminMonth, d)) continue;
       var rec = data[s.id]?.[date];
       if (!rec) { if (new Date(adminYear, adminMonth, d) <= new Date()) absent++; }
       else if (rec.type === 'mazeret') { excuse++; }
-      else if (rec.checkin) { worked++; if (rec.late) late++; if (rec.overtime) overtime += rec.overtime; }
+      else if (rec.checkin) {
+        worked++; if (rec.late) late++;
+        if (rec.overtime && rec.overtime > 0) {
+          if (rec.overtimeStatus === 'approved') otApproved += rec.overtime;
+          if (rec.overtimeStatus === 'pending') {
+            pendingOts.push({ userId: s.id, name: s.name, date: date, checkout: rec.checkout, overtime: rec.overtime });
+          }
+        }
+      }
     }
-    totalWorked += worked; totalLate += late; totalAbsent += absent; totalExcuse += excuse; totalOvertime += overtime;
-    scores.push({ id: s.id, name: s.name, worked: worked, late: late, absent: absent, excuse: excuse, overtime: overtime, score: worked * 10 - late * 2 - absent * 5 });
+    totalWorked += worked; totalLate += late; totalAbsent += absent; totalExcuse += excuse; totalOtApproved += otApproved;
+    scores.push({ id: s.id, name: s.name, worked: worked, late: late, absent: absent, excuse: excuse, otApproved: otApproved, score: worked * 10 - late * 2 - absent * 5 });
   });
 
   document.getElementById('summaryCards').innerHTML = '<div class="summary-card"><div class="num">' + totalWorked + '</div><div class="label">Toplam Ise Gelis</div></div><div class="summary-card"><div class="num" style="color:#fdcb6e">' + totalLate + '</div><div class="label">Gec Kalma</div></div><div class="summary-card"><div class="num" style="color:#e94560">' + totalAbsent + '</div><div class="label">Devamsizlik</div></div><div class="summary-card"><div class="num" style="color:#74b9ff">' + totalExcuse + '</div><div class="label">Mazeretli</div></div>';
@@ -528,14 +505,25 @@ function renderAdmin() {
   var trophies = ['🥇', '🥈', '🥉'];
   var top3Html = '<h3 style="margin-bottom:12px;color:#e94560;">🏆 En Iyi Puantaj</h3>';
   for (var i = 0; i < 3 && i < scores.length; i++) {
-    top3Html += '<div class="top3-card"><div class="top3-rank">' + trophies[i] + '</div><div class="top3-info"><div class="top3-name">' + scores[i].name + '</div><div class="top3-score">' + scores[i].worked + ' gun · ' + scores[i].late + ' gec · Mesai: ' + formatMin(scores[i].overtime) + ' · Puan: ' + scores[i].score + '</div></div></div>';
+    top3Html += '<div class="top3-card"><div class="top3-rank">' + trophies[i] + '</div><div class="top3-info"><div class="top3-name">' + scores[i].name + '</div><div class="top3-score">' + scores[i].worked + ' gun · ' + scores[i].late + ' gec · Mesai: ' + formatMin(scores[i].otApproved) + ' · Puan: ' + scores[i].score + '</div></div></div>';
   }
   document.getElementById('top3Section').innerHTML = top3Html;
+
+  var otHtml = '';
+  if (pendingOts.length > 0) {
+    otHtml = '<h3>⏳ Onay Bekleyen Mesailer (' + pendingOts.length + ')</h3>';
+    pendingOts.forEach(function(o) {
+      otHtml += '<div class="ot-card"><div class="ot-card-info"><div class="ot-card-name">' + o.name + '</div><div class="ot-card-detail">' + o.date + ' | Cikis: ' + o.checkout + ' | Mesai: ' + formatMin(o.overtime) + '</div></div><div class="ot-card-buttons"><button class="ot-btn ot-btn-ok" onclick="approveOvertime(\'' + o.userId + '\',\'' + o.date + '\')">✓ Onayla</button><button class="ot-btn ot-btn-no" onclick="rejectOvertime(\'' + o.userId + '\',\'' + o.date + '\')">✗ Reddet</button></div></div>';
+    });
+  } else {
+    otHtml = '<h3>⏳ Onay Bekleyen Mesailer</h3><div style="text-align:center;color:#999;padding:15px;font-size:13px;">Onay bekleyen mesai yok.</div>';
+  }
+  document.getElementById('otSection').innerHTML = otHtml;
 
   var tableHtml = '<thead><tr><th>Personel</th><th>Calisma</th><th>Gec</th><th>Devamsiz</th><th>Mazeret</th><th>Mesai</th><th>Puan</th></tr></thead><tbody>';
   scores.forEach(function(s) {
     var sc = s.score >= 0 ? '#00b894' : '#e94560';
-    tableHtml += '<tr><td><strong>' + s.name + '</strong><br><small style="color:#999">' + s.id + '</small></td><td><span class="badge badge-ok">' + s.worked + ' gun</span></td><td><span class="badge badge-late">' + s.late + '</span></td><td><span class="badge badge-absent">' + s.absent + '</span></td><td><span class="badge badge-excuse">' + s.excuse + '</span></td><td><span class="badge" style="background:rgba(253,121,168,0.2);color:#fd79a8;">' + formatMin(s.overtime) + '</span></td><td><strong style="color:' + sc + '">' + s.score + '</strong></td></tr>';
+    tableHtml += '<tr><td><strong>' + s.name + '</strong><br><small style="color:#999">' + s.id + '</small></td><td><span class="badge badge-ok">' + s.worked + ' gun</span></td><td><span class="badge badge-late">' + s.late + '</span></td><td><span class="badge badge-absent">' + s.absent + '</span></td><td><span class="badge badge-excuse">' + s.excuse + '</span></td><td><span class="badge" style="background:rgba(253,121,168,0.2);color:#fd79a8;">' + formatMin(s.otApproved) + '</span></td><td><strong style="color:' + sc + '">' + s.score + '</strong></td></tr>';
   });
   document.getElementById('reportTable').innerHTML = tableHtml + '</tbody>';
 }
@@ -554,8 +542,8 @@ function checkMonthEndCongrats() {
   var scores = STAFF.map(function(s) {
     var worked = 0, late = 0;
     for (var d = 1; d <= daysInMonth; d++) {
-      var date = checkYear + '-' + String(actualMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
       if (!isWorkDay(checkYear, actualMonth, d)) continue;
+      var date = checkYear + '-' + String(actualMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
       var rec = data[s.id]?.[date];
       if (rec && rec.type !== 'mazeret' && rec.checkin) { worked++; if (rec.late) late++; }
     }
@@ -578,17 +566,13 @@ function checkMonthEndCongrats() {
     localStorage.setItem(congratsKey, 'shown');
   }
 }
-
 function closeCongrats() { document.getElementById('congratsOverlay').classList.add('hidden'); }
 
 document.getElementById('pinInput').addEventListener('keyup', function(e) { if (e.key === 'Enter') verifyPin(); });
 document.getElementById('adminPassInput').addEventListener('keyup', function(e) { if (e.key === 'Enter') verifyAdminPass(); });
-
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
-
 renderLogin();
 autoLogin();
 </script>
 </body>
 </html>
-
