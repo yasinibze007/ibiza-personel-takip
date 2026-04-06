@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#e94560">
+<link rel="manifest" href="manifest.json">
+<title>Ibiza Perde - Personel Takip</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:#1a1a2e; color:#eee; min-height:100vh; overflow-x:hidden; }
+.hidden { display:none!important; }
+.login-page { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:20px; background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%); }
+.login-logo { font-size:48px; margin-bottom:10px; }
+.login-title { font-size:22px; font-weight:700; color:#e94560; margin-bottom:5px; }
+.login-subtitle { font-size:13px; color:#aaa; margin-bottom:30px; }
+.staff-list { width:100%; max-width:400px; max-height:60vh; overflow-y:auto; }
+.staff-btn { width:100%; padding:14px 18px; margin-bottom:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.1); border-radius:12px; color:#fff; font-size:16px; text-align:left; cursor:pointer; display:flex; align-items:center; gap:12px; transition:all 0.2s; }
+.staff-btn:hover,.staff-btn:active { background:rgba(233,69,96,0.2); border-color:#e94560; transform:scale(1.02); }
+.staff-avatar { width:40px; height:40px; border-radius:50%; background:#e94560; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; flex-shrink:0; }
+.staff-name { font-weight:600; }
+.staff-id { font-size:12px; color:#999; }
+.admin-link { margin-top:20px; color:#e94560; font-size:14px; cursor:pointer; text-decoration:underline; }
+.dashboard { min-height:100vh; padding:0; }
+.dash-header { background:linear-gradient(135deg,#e94560,#c23152); padding:25px 20px 20px; border-radius:0 0 24px 24px; position:relative; }
+.dash-hello { font-size:14px; color:rgba(255,255,255,0.8); }
+.dash-name { font-size:24px; font-weight:700; margin:2px 0 4px; }
+.dash-date { font-size:13px; color:rgba(255,255,255,0.7); }
+.dash-logout { position:absolute; top:25px; right:20px; background:rgba(255,255,255,0.2); border:none; color:#fff; padding:8px 12px; border-radius:8px; font-size:13px; cursor:pointer; }
+.dash-status { margin:20px; padding:20px; background:rgba(255,255,255,0.06); border-radius:16px; text-align:center; }
+.dash-status-icon { font-size:48px; margin-bottom:8px; }
+.dash-status-text { font-size:15px; color:#ccc; }
+.dash-status-time { font-size:28px; font-weight:700; color:#e94560; margin:5px 0; }
+.action-buttons { display:flex; flex-direction:column; gap:12px; margin:20px; }
+.btn-giris { padding:20px; border:none; border-radius:16px; font-size:20px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition:all 0.2s; }
+.btn-giris:active { transform:scale(0.97); }
+.btn-checkin { background:linear-gradient(135deg,#00b894,#00cec9); color:#fff; }
+.btn-checkout { background:linear-gradient(135deg,#e94560,#c23152); color:#fff; }
+.btn-mazeret { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff; padding:14px; border-radius:12px; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; }
+.modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+.modal { background:#1e2a3a; border-radius:20px; padding:25px; width:100%; max-width:380px; }
+.modal h3 { font-size:18px; margin-bottom:15px; color:#e94560; }
+.mazeret-btn { width:100%; padding:14px; margin-bottom:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-size:15px; cursor:pointer; text-align:left; display:flex; align-items:center; gap:10px; transition:all 0.2s; }
+.mazeret-btn:hover,.mazeret-btn:active { background:rgba(233,69,96,0.2); border-color:#e94560; }
+.modal-close { width:100%; padding:12px; margin-top:8px; background:transparent; border:1px solid rgba(255,255,255,0.2); border-radius:10px; color:#aaa; font-size:14px; cursor:pointer; }
+.mazeret-note { width:100%; padding:12px; margin-top:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-size:14px; resize:none; height:60px; }
+.admin-page { min-height:100vh; padding:20px; }
+.admin-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+.admin-back { background:rgba(255,255,255,0.1); border:none; color:#fff; padding:8px 14px; border-radius:8px; font-size:18px; cursor:pointer; }
+.admin-header h2 { font-size:20px; color:#e94560; }
+.month-selector { display:flex; align-items:center; gap:10px; margin-bottom:20px; justify-content:center; }
+.month-selector button { background:rgba(255,255,255,0.1); border:none; color:#fff; padding:8px 14px; border-radius:8px; font-size:16px; cursor:pointer; }
+.month-selector span { font-size:16px; font-weight:600; min-width:150px; text-align:center; }
+.report-table { width:100%; border-collapse:collapse; font-size:13px; background:rgba(255,255,255,0.04); border-radius:12px; overflow:hidden; }
+.report-table th { background:rgba(233,69,96,0.3); padding:10px 8px; text-align:left; font-size:12px; color:#e94560; }
+.report-table td { padding:8px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.report-table tr:nth-child(even) td { background:rgba(255,255,255,0.02); }
+.badge { display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; }
+.badge-ok { background:rgba(0,184,148,0.2); color:#00b894; }
+.badge-late { background:rgba(253,203,110,0.2); color:#fdcb6e; }
+.badge-absent { background:rgba(233,69,96,0.2); color:#e94560; }
+.badge-excuse { background:rgba(116,185,255,0.2); color:#74b9ff; }
+.top3-section { margin:20px 0; }
+.top3-card { display:flex; align-items:center; gap:12px; padding:14px; margin-bottom:8px; background:rgba(255,255,255,0.06); border-radius:12px; }
+.top3-rank { font-size:28px; }
+.top3-info { flex:1; }
+.top3-name { font-weight:700; font-size:15px; }
+.top3-score { font-size:13px; color:#00b894; }
+.summary-cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.summary-card { background:rgba(255,255,255,0.06); border-radius:12px; padding:14px; text-align:center; }
+.summary-card .num { font-size:28px; font-weight:700; color:#e94560; }
+.summary-card .label { font-size:12px; color:#999; margin-top:4px; }
+.congrats-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:200; padding:20px; }
+.congrats-card { background:linear-gradient(135deg,#1e2a3a,#16213e); border:2px solid #e94560; border-radius:24px; padding:30px; text-align:center; max-width:350px; width:100%; animation:popIn 0.5s ease; }
+@keyframes popIn { 0%{transform:scale(0.5);opacity:0} 100%{transform:scale(1);opacity:1} }
+.congrats-card .trophy { font-size:64px; margin-bottom:10px; }
+.congrats-card h2 { color:#e94560; font-size:22px; margin-bottom:8px; }
+.congrats-card p { color:#ccc; font-size:14px; line-height:1.5; margin-bottom:15px; }
+.congrats-card button { background:#e94560; border:none; color:#fff; padding:12px 30px; border-radius:10px; font-size:16px; cursor:pointer; }
+.toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); padding:14px 24px; border-radius:12px; font-size:14px; font-weight:600; z-index:300; animation:slideUp 0.3s ease; max-width:90%; text-align:center; }
+@keyframes slideUp { 0%{opacity:0;transform:translateX(-50%) translateY(20px)} 100%{opacity:1;transform:translateX(-50%) translateY(0)} }
+.toast-success { background:#00b894; color:#fff; }
+.toast-error { background:#e94560; color:#fff; }
+.toast-info { background:#0984e3; color:#fff; }
+.gps-loading { display:flex; flex-direction:column; align-items:center; gap:10px; padding:30px; }
+.gps-spinner { width:40px; height:40px; border:4px solid rgba(255,255,255,0.1); border-top-color:#e94560; border-radius:50%; animation:spin 1s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+
+<div id="loginPage" class="login-page">
+  <div class="login-logo">🏭</div>
+  <div class="login-title">Ibiza Premium Perde</div>
+  <div class="login-subtitle">Personel Giriş/Çıkış Sistemi</div>
+  <div class="staff-list" id="staffList"></div>
+  <div class="admin-link" onclick="showAdmin()">📊 Yönetici Paneli (Puantaj)</div>
+</div>
+
+<div id="dashboardPage" class="dashboard hidden">
+  <div class="dash-header">
+    <div class="dash-hello">Merhaba,</div>
+    <div class="dash-name" id="dashName"></div>
+    <div class="dash-date" id="dashDate"></div>
+    <button class="dash-logout" onclick="logout()">Çıkış</button>
+  </div>
+  <div class="dash-status" id="dashStatus">
+    <div class="dash-status-icon" id="statusIcon">⏰</div>
+    <div class="dash-status-text" id="statusText">Henüz giriş yapılmadı</div>
+    <div class="dash-status-time" id="statusTime"></div>
+  </div>
+  <div class="action-buttons" id="actionButtons"></div>
+</div>
+
+<div id="mazeretModal" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>📋 Mazeret Bildirimi</h3>
+    <button class="mazeret-btn" onclick="submitMazeret('Hasta (Raporlu)')">🏥 Hasta (Raporlu)</button>
+    <button class="mazeret-btn" onclick="submitMazeret('Hasta (Raporsuz)')">🤒 Hasta (Raporsuz)</button>
+    <button class="mazeret-btn" onclick="submitMazeret('Yıllık İzin')">🌴 Yıllık İzin</button>
+    <button class="mazeret-btn" onclick="submitMazeret('Mazeret İzni')">📝 Mazeret İzni</button>
+    <button class="mazeret-btn" onclick="submitMazeret('Resmi Tatil')">🎉 Resmi Tatil</button>
+    <button class="mazeret-btn" onclick="submitMazeret('Diğer')">💬 Diğer</button>
+    <textarea class="mazeret-note" id="mazeretNote" placeholder="Ek not (isteğe bağlı)..."></textarea>
+    <button class="modal-close" onclick="closeMazeret()">İptal</button>
+  </div>
+</div>
+
+<div id="adminPage" class="admin-page hidden">
+  <div class="admin-header">
+    <button class="admin-back" onclick="hideAdmin()">←</button>
+    <h2>📊 Aylık Puantaj Raporu</h2>
+  </div>
+  <div class="month-selector">
+    <button onclick="changeMonth(-1)">◀</button>
+    <span id="monthLabel"></span>
+    <button onclick="changeMonth(1)">▶</button>
+  </div>
+  <div class="summary-cards" id="summaryCards"></div>
+  <div class="top3-section" id="top3Section"></div>
+  <div style="overflow-x:auto;">
+    <table class="report-table" id="reportTable"></table>
+  </div>
+</div>
+
+<div id="congratsOverlay" class="congrats-overlay hidden">
+  <div class="congrats-card">
+    <div class="trophy" id="congratsTrophy">🏆</div>
+    <h2 id="congratsTitle"></h2>
+    <p id="congratsText"></p>
+    <button onclick="closeCongrats()">Teşekkürler! 🎉</button>
+  </div>
+</div>
+
+<div id="gpsLoading" class="modal-overlay hidden">
+  <div class="gps-loading">
+    <div class="gps-spinner"></div>
+    <div style="color:#ccc;font-size:14px;">Konum doğrulanıyor...</div>
+  </div>
+</div>
+<script>
+const FACTORY_LAT = 36.329284;
+const FACTORY_LNG = 30.331934;
+const MAX_DISTANCE_M = 100;
+const WORK_START = '08:30';
+const WORK_END = '18:00';
+
+const STAFF = [
+  { id: 'P001', name: 'Ahmet Yılmaz' },
+  { id: 'P002', name: 'Mehmet Demir' },
+  { id: 'P003', name: 'Fatma Kaya' },
+  { id: 'P004', name: 'Ali Çelik' },
+  { id: 'P005', name: 'Ayşe Şahin' },
+  { id: 'P006', name: 'Mustafa Yıldız' },
+  { id: 'P007', name: 'Zeynep Öztürk' },
+  { id: 'P008', name: 'Hasan Arslan' },
+  { id: 'P009', name: 'Elif Doğan' },
+  { id: 'P010', name: 'Hüseyin Kılıç' },
+  { id: 'P011', name: 'Merve Aydın' },
+  { id: 'P012', name: 'İbrahim Çetin' },
+  { id: 'P013', name: 'Selin Korkmaz' },
+  { id: 'P014', name: 'Emre Özkan' },
+  { id: 'P015', name: 'Büşra Polat' }
+];
+
+const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const DAYS_TR = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+
+let currentUser = null;
+let adminMonth = new Date().getMonth();
+let adminYear = new Date().getFullYear();
+
+function getData() {
+  return JSON.parse(localStorage.getItem('ibiza_attendance') || '{}');
+}
+function saveData(data) {
+  localStorage.setItem('ibiza_attendance', JSON.stringify(data));
+}
+function todayKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function nowTime() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function getRecord(userId, date) {
+  const data = getData();
+  return data[userId]?.[date] || null;
+}
+function setRecord(userId, date, record) {
+  const data = getData();
+  if (!data[userId]) data[userId] = {};
+  data[userId][date] = record;
+  saveData(data);
+}
+
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3;
+  const toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function checkGPS() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject('Konum servisi desteklenmiyor.');
+      return;
+    }
+    document.getElementById('gpsLoading').classList.remove('hidden');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        document.getElementById('gpsLoading').classList.add('hidden');
+        const dist = getDistance(pos.coords.latitude, pos.coords.longitude, FACTORY_LAT, FACTORY_LNG);
+        if (dist <= MAX_DISTANCE_M) {
+          resolve(Math.round(dist));
+        } else {
+          reject('Fabrikaya uzakliginiz ' + Math.round(dist) + ' metre. Giris/cikis yapabilmek icin fabrikaya en fazla ' + MAX_DISTANCE_M + ' metre uzaklikta olmalisiniz.');
+        }
+      },
+      err => {
+        document.getElementById('gpsLoading').classList.add('hidden');
+        if (err.code === 1) reject('Konum izni reddedildi. Lutfen konum iznini acin.');
+        else if (err.code === 2) reject('Konum bilgisi alinamadi. Lutfen tekrar deneyin.');
+        else reject('Konum alinamadi. Zaman asimi.');
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  });
+}
+
+function showToast(msg, type) {
+  if (!type) type = 'success';
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function() { t.remove(); }, 3500);
+}
+
+function renderLogin() {
+  const list = document.getElementById('staffList');
+  let html = '';
+  for (let i = 0; i < STAFF.length; i++) {
+    html += '<button class="staff-btn" onclick="login(\'' + STAFF[i].id + '\')"><div class="staff-avatar">' + STAFF[i].name.charAt(0) + '</div><div><div class="staff-name">' + STAFF[i].name + '</div><div class="staff-id">' + STAFF[i].id + '</div></div></button>';
+  }
+  list.innerHTML = html;
+}
+
+function login(userId) {
+  currentUser = STAFF.find(function(s) { return s.id === userId; });
+  if (!currentUser) return;
+  localStorage.setItem('ibiza_current_user', userId);
+  showDashboard();
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('ibiza_current_user');
+  document.getElementById('dashboardPage').classList.add('hidden');
+  document.getElementById('loginPage').classList.remove('hidden');
+}
+
+function autoLogin() {
+  const saved = localStorage.getItem('ibiza_current_user');
+  if (saved) {
+    currentUser = STAFF.find(function(s) { return s.id === saved; });
+    if (currentUser) { showDashboard(); return; }
+  }
+  document.getElementById('loginPage').classList.remove('hidden');
+}
+
+function showDashboard() {
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('adminPage').classList.add('hidden');
+  document.getElementById('dashboardPage').classList.remove('hidden');
+  document.getElementById('dashName').textContent = currentUser.name;
+  const now = new Date();
+  document.getElementById('dashDate').textContent = now.getDate() + ' ' + MONTHS_TR[now.getMonth()] + ' ' + now.getFullYear() + ', ' + DAYS_TR[now.getDay()];
+  updateDashStatus();
+  checkMonthEndCongrats();
+}
+
+function updateDashStatus() {
+  const record = getRecord(currentUser.id, todayKey());
+  const statusIcon = document.getElementById('statusIcon');
+  const statusText = document.getElementById('statusText');
+  const statusTime = document.getElementById('statusTime');
+  const actionDiv = document.getElementById('actionButtons');
+
+  if (!record) {
+    statusIcon.textContent = '⏰';
+    statusText.textContent = 'Henuz giris yapilmadi';
+    statusTime.textContent = '';
+    actionDiv.innerHTML = '<button class="btn-giris btn-checkin" onclick="doCheckin()">👋 GİRİŞ YAP</button><button class="btn-mazeret" onclick="openMazeret()">📋 Mazeret Bildir (Bugün Gelemiyorum)</button>';
+  } else if (record.type === 'mazeret') {
+    statusIcon.textContent = '📋';
+    statusText.textContent = 'Mazeret: ' + record.reason;
+    statusTime.textContent = '';
+    actionDiv.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">Bugun icin mazeret bildirildi.</div>';
+  } else if (record.checkin && !record.checkout) {
+    statusIcon.textContent = '✅';
+    statusText.textContent = 'Giris yapildi';
+    statusTime.textContent = record.checkin;
+    actionDiv.innerHTML = '<button class="btn-giris btn-checkout" onclick="doCheckout()">👋 ÇIKIŞ YAP</button>';
+  } else if (record.checkin && record.checkout) {
+    statusIcon.textContent = '🏠';
+    statusText.textContent = 'Giris: ' + record.checkin + ' → Cikis: ' + record.checkout;
+    var sh = parseInt(record.checkin.split(':')[0]), sm = parseInt(record.checkin.split(':')[1]);
+    var eh = parseInt(record.checkout.split(':')[0]), em = parseInt(record.checkout.split(':')[1]);
+    var diff = (eh * 60 + em) - (sh * 60 + sm);
+    statusTime.textContent = Math.floor(diff / 60) + ' saat ' + (diff % 60) + ' dk';
+    actionDiv.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">Bugunku mesainiz tamamlandi. Iyi aksamlar! 🌙</div>';
+  }
+}
+async function doCheckin() {
+  try {
+    const dist = await checkGPS();
+    const time = nowTime();
+    const record = { checkin: time, checkout: null, distance: dist };
+    if (time > WORK_START) record.late = true;
+    setRecord(currentUser.id, todayKey(), record);
+    updateDashStatus();
+    showToast('Giris kaydedildi: ' + time + ' ✓');
+  } catch (err) {
+    showToast(err, 'error');
+  }
+}
+
+async function doCheckout() {
+  try {
+    const dist = await checkGPS();
+    const time = nowTime();
+    const record = getRecord(currentUser.id, todayKey());
+    record.checkout = time;
+    record.checkoutDistance = dist;
+    if (time < WORK_END) record.earlyLeave = true;
+    setRecord(currentUser.id, todayKey(), record);
+    updateDashStatus();
+    showToast('Cikis kaydedildi: ' + time + ' ✓');
+  } catch (err) {
+    showToast(err, 'error');
+  }
+}
+
+function openMazeret() {
+  document.getElementById('mazeretModal').classList.remove('hidden');
+}
+function closeMazeret() {
+  document.getElementById('mazeretModal').classList.add('hidden');
+  document.getElementById('mazeretNote').value = '';
+}
+function submitMazeret(reason) {
+  const note = document.getElementById('mazeretNote').value.trim();
+  setRecord(currentUser.id, todayKey(), { type: 'mazeret', reason: reason, note: note, time: nowTime() });
+  closeMazeret();
+  updateDashStatus();
+  showToast('Mazeret bildirildi: ' + reason);
+}
+
+function showAdmin() {
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('dashboardPage').classList.add('hidden');
+  document.getElementById('adminPage').classList.remove('hidden');
+  adminMonth = new Date().getMonth();
+  adminYear = new Date().getFullYear();
+  renderAdmin();
+}
+function hideAdmin() {
+  document.getElementById('adminPage').classList.add('hidden');
+  if (currentUser) { document.getElementById('dashboardPage').classList.remove('hidden'); }
+  else { document.getElementById('loginPage').classList.remove('hidden'); }
+}
+function changeMonth(dir) {
+  adminMonth += dir;
+  if (adminMonth < 0) { adminMonth = 11; adminYear--; }
+  if (adminMonth > 11) { adminMonth = 0; adminYear++; }
+  renderAdmin();
+}
+
+function renderAdmin() {
+  document.getElementById('monthLabel').textContent = MONTHS_TR[adminMonth] + ' ' + adminYear;
+  const data = getData();
+  const daysInMonth = new Date(adminYear, adminMonth + 1, 0).getDate();
+  let totalWorked = 0, totalLate = 0, totalAbsent = 0, totalExcuse = 0;
+  const scores = [];
+
+  STAFF.forEach(function(s) {
+    let worked = 0, late = 0, absent = 0, excuse = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = adminYear + '-' + String(adminMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      const dow = new Date(adminYear, adminMonth, d).getDay();
+      if (dow === 0 || dow === 6) continue;
+      const rec = data[s.id]?.[date];
+      if (!rec) { if (new Date(adminYear, adminMonth, d) <= new Date()) absent++; }
+      else if (rec.type === 'mazeret') { excuse++; }
+      else if (rec.checkin) { worked++; if (rec.late) late++; }
+    }
+    totalWorked += worked; totalLate += late; totalAbsent += absent; totalExcuse += excuse;
+    scores.push({ id: s.id, name: s.name, worked: worked, late: late, absent: absent, excuse: excuse, score: worked * 10 - late * 2 - absent * 5 });
+  });
+
+  document.getElementById('summaryCards').innerHTML = '<div class="summary-card"><div class="num">' + totalWorked + '</div><div class="label">Toplam Ise Gelis</div></div><div class="summary-card"><div class="num" style="color:#fdcb6e">' + totalLate + '</div><div class="label">Gec Kalma</div></div><div class="summary-card"><div class="num" style="color:#e94560">' + totalAbsent + '</div><div class="label">Devamsizlik</div></div><div class="summary-card"><div class="num" style="color:#74b9ff">' + totalExcuse + '</div><div class="label">Mazeretli</div></div>';
+
+  scores.sort(function(a, b) { return b.score - a.score; });
+  const trophies = ['🥇', '🥈', '🥉'];
+  let top3Html = '<h3 style="margin-bottom:12px;color:#e94560;">🏆 En Iyi Puantaj</h3>';
+  for (let i = 0; i < 3 && i < scores.length; i++) {
+    top3Html += '<div class="top3-card"><div class="top3-rank">' + trophies[i] + '</div><div class="top3-info"><div class="top3-name">' + scores[i].name + '</div><div class="top3-score">' + scores[i].worked + ' gun calisma · ' + scores[i].late + ' gec · Puan: ' + scores[i].score + '</div></div></div>';
+  }
+  document.getElementById('top3Section').innerHTML = top3Html;
+
+  let tableHtml = '<thead><tr><th>Personel</th><th>Calisma</th><th>Gec</th><th>Devamsiz</th><th>Mazeret</th><th>Puan</th></tr></thead><tbody>';
+  scores.forEach(function(s) {
+    const sc = s.score >= 0 ? '#00b894' : '#e94560';
+    tableHtml += '<tr><td><strong>' + s.name + '</strong><br><small style="color:#999">' + s.id + '</small></td><td><span class="badge badge-ok">' + s.worked + ' gun</span></td><td><span class="badge badge-late">' + s.late + '</span></td><td><span class="badge badge-absent">' + s.absent + '</span></td><td><span class="badge badge-excuse">' + s.excuse + '</span></td><td><strong style="color:' + sc + '">' + s.score + '</strong></td></tr>';
+  });
+  document.getElementById('reportTable').innerHTML = tableHtml + '</tbody>';
+}
+
+function checkMonthEndCongrats() {
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  if (now.getDate() < lastDay - 1 && now.getDate() !== 1) return;
+  const congratsKey = 'ibiza_congrats_' + now.getFullYear() + '_' + now.getMonth() + '_' + currentUser.id;
+  if (localStorage.getItem(congratsKey)) return;
+  const data = getData();
+  const checkMonth = now.getDate() === 1 ? now.getMonth() - 1 : now.getMonth();
+  const checkYear = (now.getDate() === 1 && checkMonth < 0) ? now.getFullYear() - 1 : now.getFullYear();
+  const actualMonth = checkMonth < 0 ? 11 : checkMonth;
+  const daysInMonth = new Date(checkYear, actualMonth + 1, 0).getDate();
+  const scores = STAFF.map(function(s) {
+    let worked = 0, late = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = checkYear + '-' + String(actualMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      const dow = new Date(checkYear, actualMonth, d).getDay();
+      if (dow === 0 || dow === 6) continue;
+      const rec = data[s.id]?.[date];
+      if (rec && rec.type !== 'mazeret' && rec.checkin) { worked++; if (rec.late) late++; }
+    }
+    return { id: s.id, score: worked * 10 - late * 2 };
+  });
+  scores.sort(function(a, b) { return b.score - a.score; });
+  const rank = scores.findIndex(function(s) { return s.id === currentUser.id; });
+  if (rank < 3 && rank >= 0) {
+    const trophies = ['🥇', '🥈', '🥉'];
+    const titles = ['BIRINCISI', 'IKINCISI', 'UCUNCUSU'];
+    const msgs = [
+      'Tebrikler ' + currentUser.name + '! ' + MONTHS_TR[actualMonth] + ' ayinda EN YUKSEK puantajla birinci oldunuz!',
+      'Tebrikler ' + currentUser.name + '! ' + MONTHS_TR[actualMonth] + ' ayinda ikinci en iyi puantaja sahipsiniz!',
+      'Tebrikler ' + currentUser.name + '! ' + MONTHS_TR[actualMonth] + ' ayinda ucuncu en iyi puantaja sahipsiniz!'
+    ];
+    document.getElementById('congratsTrophy').textContent = trophies[rank];
+    document.getElementById('congratsTitle').textContent = 'AYIN ' + titles[rank] + '! 🎉';
+    document.getElementById('congratsText').textContent = msgs[rank];
+    document.getElementById('congratsOverlay').classList.remove('hidden');
+    localStorage.setItem(congratsKey, 'shown');
+  }
+}
+
+function closeCongrats() {
+  document.getElementById('congratsOverlay').classList.add('hidden');
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+renderLogin();
+autoLogin();
+</script>
+</body>
+</html>
